@@ -55,7 +55,7 @@ class file_walker:
         if self.show_prog.get(): return self.search_win(self, *args)
         self.search_but.configure(state='disabled')
         self.dirs = []
-        if not platform.system() == 'Linux':
+        if not platform.system() in ['Linux', 'Windows']:
             for root, directories, filenames in os.walk(self.search_loc.get()):
                 if any([self.search_var.get() in filename for filename in filenames]):
                     self.dirs.append(root)
@@ -63,13 +63,17 @@ class file_walker:
                     if self.search_var.get() in filename:
                         print(filename)
         else:
-            os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            if platform.system() == 'Linux':
+                os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            elif platform.system() == 'Windows':
+                print(os.path.join(self.search_loc.get(), '*{file}*'.format(file=self.search_var.get())))
+                os.system(r'dir /s/b {search} > files.txt'.format(search=os.path.join(self.search_loc.get(), '*{file}*'.format(file=self.search_var.get()))))
             with open('files.txt', 'r') as f:
                 self.dirs = [(os.path.dirname(line)) for line in f]
 
         print(self.dirs)
         self.search_vew.delete(*self.search_vew.get_children())
-        dir = os.path.abspath(self.search_loc.get()).replace('\\', '/')
+        dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
         self.populate_tree(self.search_vew, node)
         self.search_but.configure(state='normal')
@@ -78,7 +82,10 @@ class file_walker:
         prog_win = tk.Toplevel(master=self.master)
         prog_win.title("Progress")
         prog_win.resizable(False, False)
-        prog_win.wm_attributes('-type', 'splash')
+        if platform.system() == 'Linux':
+            prog_win.wm_attributes('-type', 'splash')
+        else:
+            prog_win.overrideredirect(1)
         prog_win.attributes("-topmost", True)
         prog_win.geometry('150x22+{:.0f}+{:.0f}'.format(self.master.winfo_x()+(self.master.winfo_width())-150, self.master.winfo_y()+(self.master.winfo_height())-22)) #self.master.winfo_height(), self.master.winfo_width()
 
@@ -91,17 +98,21 @@ class file_walker:
         self.search_but.configure(state='disabled')
         file_count = 0
         self.dirs = []
-        if not platform.system() == 'Linux':
+        if not platform.system() in ['Linux', 'Windows']:
             for root, directories, filenames in os.walk(self.search_loc.get()):
                 if any([self.search_var.get() in filename for filename in filenames]):
                     self.dirs.append(root)
                 for filename in filenames:
                     if self.search_var.get() in filename:
-                        filecount += 1
+                        file_count += 1
                         curr_prog["text"] = 'Files Found: {0}'.format(file_count)
                         curr_prog.update()
         else:
-            os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            if platform.system() == 'Linux':
+                os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            elif platform.system() == 'Windows':
+                print(os.path.join(self.search_loc.get(), '*{file}*'.format(file=self.search_var.get())))
+                os.system(r'dir /s/b {search} > files.txt'.format(search=os.path.join(self.search_loc.get(), '*{file}*'.format(file=self.search_var.get()))))
             with open('files.txt', 'r') as f:
                 for line in f:
                     file_count += 1
@@ -111,9 +122,10 @@ class file_walker:
 
         print(self.dirs)
         self.search_vew.delete(*self.search_vew.get_children())
-        dir = os.path.abspath(self.search_loc.get()).replace('\\', '/')
+        dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
         self.populate_tree(self.search_vew, node)
+        self.search_vew.update()
         self.search_but.configure(state='normal')
 
         self.master.after(1000, prog_win.destroy)
@@ -126,7 +138,7 @@ class file_walker:
         parent = tree.parent(node)
         for p in os.listdir(path):
             ptype = None
-            p = os.path.join(path, p).replace('\\', '/')
+            p = os.path.join(path, p)
             if os.path.isdir(p):
                 ptype = "directory"
                 if not any(p in substring for substring in self.dirs):
