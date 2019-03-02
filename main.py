@@ -9,6 +9,7 @@ import sys
 import platform
 import stat
 import time
+import mmap
 try:
     import ttkthemes
 except:
@@ -17,12 +18,16 @@ except:
 class file_walker:
     def __init__(self, master):
         self.master = master
+        self.master.title('Onion Search')
 
         self.menubar = tk.Menu(self.master)
         self.master.configure(menu=self.menubar)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.show_prog = tk.BooleanVar()
         self.filemenu.add_checkbutton(label="Show Progress", variable=self.show_prog)
+        self.inside_search_files = []
+        self.search_inside_var = tk.BooleanVar()
+        self.filemenu.add_checkbutton(label="Search Inside TextFiles", variable=self.search_inside_var)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
 
@@ -75,7 +80,10 @@ class file_walker:
             with open('files.txt', 'r') as f:
                 self.dirs = [(os.path.dirname(line)) for line in f]
 
-        print(self.dirs)
+        if self.search_inside_var.get():
+            self.dirs += self.search_inside()
+
+        #print(self.dirs)
         self.search_vew.delete(*self.search_vew.get_children())
         dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
@@ -123,8 +131,9 @@ class file_walker:
                     self.dirs.append(os.path.dirname(line))
                     curr_prog["text"] = 'Files Found: {0}'.format(file_count)
                     curr_prog.update()
-
-        print(self.dirs)
+        if self.search_inside_var.get():
+            self.dirs += self.search_inside()
+        #print(self.dirs)
         self.search_vew.delete(*self.search_vew.get_children())
         dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
@@ -133,6 +142,22 @@ class file_walker:
         self.search_but.configure(state='normal')
 
         self.master.after(1000, prog_win.destroy)
+
+    def search_inside(self):
+        files = []
+        self.inside_search_files = []
+        #if sys.version_info >= (3, 0):
+        if platform.system() == 'Linux':
+            print('grep -sRil "{text}" {location} > files.txt'.format(text=self.search_var.get(), location=self.search_loc.get()))
+            os.system('grep -sRil "{text}" {location} > files.txt'.format(text=self.search_var.get(), location=self.search_loc.get()))
+        elif platform.system() == 'Windows':
+            os.system('findstr /s /m /p /i /c:"{text}" {location} > files.txt'.format(text=self.search_var.get(),location=os.path.join(self.search_loc.get(), '*')))
+        with open('files.txt', 'r') as f:
+            for line in f:
+                files.append(os.path.dirname(line))
+                self.inside_search_files.append(os.path.normpath(line.strip()))
+        print('self.inside_search_files=', self.inside_search_files)
+        return files
 
     def populate_tree(self, tree, node):
         if tree.set(node, "type") != 'directory':
@@ -147,12 +172,16 @@ class file_walker:
                 ptype = "directory"
                 if not any(p in substring for substring in self.dirs):
                     continue
+                #if not any(p in substring for substring in self.inside_search_files):
+                #    continue
             elif os.path.isfile(p): ptype = "file"
             fname = os.path.split(p)[1]
             if ptype != "file":
                 id = tree.insert(node, "end", text=fname, values=[p, ptype])
             else:
-                if self.search_var.get() in fname:
+                print(p in self.inside_search_files)
+                print(p)
+                if self.search_var.get() in fname or p in self.inside_search_files:
                     id = tree.insert(node, "end", text=fname, values=[p, ptype])
                 else:
                     continue
