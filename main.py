@@ -23,7 +23,7 @@ class file_walker:
         self.search_bar.grid(row=0, column=1, sticky='nsew')
 
         self.search_vew = ScrolledTreeView(self.master)
-        self.search_vew.grid(row=1, column=0, columnspan=2, sticky='nsew')
+        self.search_vew.grid(row=1, column=0, columnspan=3, sticky='nsew')
 
         self.search_vew.heading("#0", text="File")
         self.search_vew["columns"] = ("fullpath", "type", "size", "Last Access")
@@ -35,40 +35,36 @@ class file_walker:
         self.master.grid_rowconfigure(1, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
 
-        self.search_var.trace('w', self.search)
+        self.search_but = ttk.Button(self.master, text="Search", command=self.search)
+        self.search_but.grid(row=0, column=2)
 
         self.master.bind('<<TreeviewOpen>>', self.update_tree)
 
         self.dirs = []
 
     def search(self, *args):
-        def search_command():
-            if orig_search_var != self.search_var.get():
-                return
-            self.dirs = []
-            if not platform.system() == 'Linux':
-                for root, directories, filenames in os.walk(self.search_loc.get()):
-                    if any([self.search_var.get() in filename for filename in filenames]):
-                        self.dirs.append(root)
-                    for filename in filenames:
-                        if self.search_var.get() in filename:
-                            print(filename)
-            else:
-                os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
-                with open('files.txt', 'r') as f:
-                    self.dirs = [(os.path.dirname(line)) for line in f]
-
-
-            print(self.dirs)
-            self.search_vew.delete(*self.search_vew.get_children())
-            dir = os.path.abspath(self.search_loc.get()).replace('\\', '/')
-            node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
-            self.populate_tree(self.search_vew, node)
-
-        print(*args)
         if not os.path.isdir(self.search_loc.get()): return
-        orig_search_var = self.search_var.get()
-        self.master.after(1000, search_command)
+
+        self.search_but.configure(state='disabled')
+        self.dirs = []
+        if not platform.system() == 'Linux':
+            for root, directories, filenames in os.walk(self.search_loc.get()):
+                if any([self.search_var.get() in filename for filename in filenames]):
+                    self.dirs.append(root)
+                for filename in filenames:
+                    if self.search_var.get() in filename:
+                        print(filename)
+        else:
+            os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            with open('files.txt', 'r') as f:
+                self.dirs = [(os.path.dirname(line)) for line in f]
+
+        print(self.dirs)
+        self.search_vew.delete(*self.search_vew.get_children())
+        dir = os.path.abspath(self.search_loc.get()).replace('\\', '/')
+        node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
+        self.populate_tree(self.search_vew, node)
+        self.search_but.configure(state='normal')
 
     def populate_tree(self, tree, node):
         if tree.set(node, "type") != 'directory':
