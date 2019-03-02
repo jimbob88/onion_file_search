@@ -14,6 +14,14 @@ class file_walker:
     def __init__(self, master):
         self.master = master
 
+        self.menubar = tk.Menu(self.master)
+        self.master.configure(menu=self.menubar)
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.show_prog = tk.BooleanVar()
+        self.filemenu.add_checkbutton(label="Show Progress", variable=self.show_prog)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+
+
         self.search_loc = tk.StringVar()
         self.search_loc.set(os.path.expanduser('~'))
         ttk.Combobox(self.master, values=(os.path.expanduser('~'),), textvariable=self.search_loc, justify='center').grid(row=0, column=0)
@@ -44,7 +52,7 @@ class file_walker:
 
     def search(self, *args):
         if not os.path.isdir(self.search_loc.get()): return
-
+        if self.show_prog.get(): return self.search_win(self, *args)
         self.search_but.configure(state='disabled')
         self.dirs = []
         if not platform.system() == 'Linux':
@@ -65,6 +73,50 @@ class file_walker:
         node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
         self.populate_tree(self.search_vew, node)
         self.search_but.configure(state='normal')
+
+    def search_win(self, *args):
+        prog_win = tk.Toplevel(master=self.master)
+        prog_win.title("Progress")
+        prog_win.resizable(False, False)
+        prog_win.wm_attributes('-type', 'splash')
+        prog_win.attributes("-topmost", True)
+        prog_win.geometry('150x22+{:.0f}+{:.0f}'.format(self.master.winfo_x()+(self.master.winfo_width())-150, self.master.winfo_y()+(self.master.winfo_height())-22)) #self.master.winfo_height(), self.master.winfo_width()
+
+        curr_prog = ttk.Label(prog_win, text='Files Found: ')
+        curr_prog.grid(row=0, column=0, sticky='nsew')
+
+        prog_win.grid_rowconfigure(0, weight=1)
+        prog_win.grid_columnconfigure(0, weight=1)
+
+        self.search_but.configure(state='disabled')
+        file_count = 0
+        self.dirs = []
+        if not platform.system() == 'Linux':
+            for root, directories, filenames in os.walk(self.search_loc.get()):
+                if any([self.search_var.get() in filename for filename in filenames]):
+                    self.dirs.append(root)
+                for filename in filenames:
+                    if self.search_var.get() in filename:
+                        filecount += 1
+                        curr_prog["text"] = 'Files Found: {0}'.format(file_count)
+                        curr_prog.update()
+        else:
+            os.system('find {location} -name "*{search_term}*" > ./files.txt'.format(location=self.search_loc.get(), search_term=self.search_var.get()))
+            with open('files.txt', 'r') as f:
+                for line in f:
+                    file_count += 1
+                    self.dirs.append(os.path.dirname(line))
+                    curr_prog["text"] = 'Files Found: {0}'.format(file_count)
+                    curr_prog.update()
+
+        print(self.dirs)
+        self.search_vew.delete(*self.search_vew.get_children())
+        dir = os.path.abspath(self.search_loc.get()).replace('\\', '/')
+        node = self.search_vew.insert('', 'end', text=dir, values=[dir, "directory"])
+        self.populate_tree(self.search_vew, node)
+        self.search_but.configure(state='normal')
+
+        self.master.after(1000, prog_win.destroy)
 
     def populate_tree(self, tree, node):
         if tree.set(node, "type") != 'directory':
