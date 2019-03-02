@@ -9,6 +9,10 @@ import sys
 import platform
 import stat
 import time
+try:
+    import ttkthemes
+except:
+    pass
 
 class file_walker:
     def __init__(self, master):
@@ -24,7 +28,7 @@ class file_walker:
 
         self.search_loc = tk.StringVar()
         self.search_loc.set(os.path.expanduser('~'))
-        ttk.Combobox(self.master, values=(os.path.expanduser('~'),), textvariable=self.search_loc, justify='center').grid(row=0, column=0)
+        ttk.Combobox(self.master, values=(os.path.expanduser('~'),), textvariable=self.search_loc, justify='center').grid(row=0, column=0, sticky='ns')
 
         self.search_var = tk.StringVar()
         self.search_bar = ttk.Entry(self.master, textvariable=self.search_var)
@@ -293,9 +297,24 @@ def _on_shiftmouse(event, widget):
 
 
 def main():
-    root = tk.Tk()
-    file_walker_gui = file_walker(root)
-    root.mainloop()
+    if 'ttkthemes' in sys.modules:
+        root = ttkthemes.ThemedTk()
+        file_walker_gui = file_walker(root)
+
+        if platform.system() == 'Linux':
+            if platform.dist()[0] == 'Ubuntu':
+                root.set_theme("ubuntu")
+            else:
+                root.set_theme("equilux")
+        elif platform.system() == 'Windows':
+            root.set_theme("vista")
+        elif platform.system() == 'Darwin':
+            root.set_theme("aqua")
+        root.mainloop()
+    else:
+        root = tk.Tk()
+        file_walker_gui = file_walker(root)
+        root.mainloop()
 
 if __name__ == '__main__':
     main()
