@@ -16,6 +16,11 @@ try:
 except:
     pass
 
+try:
+    import scandir_rs
+except:
+    pass
+
 
 class file_walker:
     def __init__(self, master):
@@ -78,9 +83,6 @@ class file_walker:
             for root, directories, filenames in os.walk(self.search_loc.get()):
                 if any([self.search_var.get() in filename for filename in filenames]):
                     self.dirs.append(root)
-                for filename in filenames:
-                    if self.search_var.get() in filename:
-                        print(filename)
         else:
             if platform.system() == "Linux":
                 os.system(
@@ -90,27 +92,33 @@ class file_walker:
                     )
                 )
             elif platform.system() == "Windows":
-                print(
-                    os.path.join(
-                        self.search_loc.get(),
-                        "*{file}*".format(file=self.search_var.get()),
-                    )
-                )
-                os.system(
-                    r"dir /s/b {search} > files.txt".format(
-                        search=os.path.join(
-                            self.search_loc.get(),
-                            "*{file}*".format(file=self.search_var.get()),
+                if "scandir_rs" in sys.modules:
+                    for root, directories, filenames in scandir_rs.walk.Walk(
+                        self.search_loc.get()
+                    ):
+                        if any(
+                            [
+                                self.search_var.get() in filename
+                                for filename in filenames
+                            ]
+                        ):
+                            self.dirs.append(root)
+                else:
+                    os.system(
+                        r"dir /s/b {search} > files.txt".format(
+                            search=os.path.join(
+                                self.search_loc.get(),
+                                "*{file}*".format(file=self.search_var.get()),
+                            )
                         )
                     )
-                )
-            with open("files.txt", "r") as f:
-                self.dirs = [(os.path.dirname(line)) for line in f]
+            if "scandir_rs" not in sys.modules:
+                with open("files.txt", "r") as f:
+                    self.dirs = [(os.path.dirname(line)) for line in f]
 
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
 
-        # print(self.dirs)
         self.search_vew.delete(*self.search_vew.get_children())
         dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert("", "end", text=dir, values=[dir, "directory"])
@@ -118,6 +126,10 @@ class file_walker:
         self.search_but.configure(state="normal")
 
     def search_win(self, *args):
+        """
+        Search but with a counter for the number of currently found files
+        Tries to mimic the functionality of catfish but if you mimize onion_file_search it stays open, needs fixing
+        """
         prog_win = tk.Toplevel(master=self.master)
         prog_win.title("Progress")
         prog_win.resizable(False, False)
@@ -149,6 +161,9 @@ class file_walker:
                 for filename in filenames:
                     if self.search_var.get() in filename:
                         file_count += 1
+                        if file_count % 100 == 1:
+                            curr_prog["text"] = "Files Found: {0}".format(file_count)
+                            curr_prog.update()
                         curr_prog["text"] = "Files Found: {0}".format(file_count)
                         curr_prog.update()
         else:
@@ -160,26 +175,43 @@ class file_walker:
                     )
                 )
             elif platform.system() == "Windows":
-                print(
-                    os.path.join(
-                        self.search_loc.get(),
-                        "*{file}*".format(file=self.search_var.get()),
-                    )
-                )
-                os.system(
-                    r"dir /s/b {search} > files.txt".format(
-                        search=os.path.join(
-                            self.search_loc.get(),
-                            "*{file}*".format(file=self.search_var.get()),
-                        )
-                    )
-                )
-            with open("files.txt", "r") as f:
-                for line in f:
-                    file_count += 1
-                    self.dirs.append(os.path.dirname(line))
+                if "scandir_rs" in sys.modules:
+                    for root, directories, filenames in scandir_rs.walk.Walk(
+                        self.search_loc.get()
+                    ):
+                        if any(
+                            [
+                                self.search_var.get() in filename
+                                for filename in filenames
+                            ]
+                        ):
+                            self.dirs.append(root)
+                        for filename in filenames:
+                            if self.search_var.get() in filename:
+                                file_count += 1
+                                if file_count % 100 == 1:
+                                    curr_prog["text"] = "Files Found: {0}".format(
+                                        file_count
+                                    )
+                                    curr_prog.update()
                     curr_prog["text"] = "Files Found: {0}".format(file_count)
                     curr_prog.update()
+                else:
+                    os.system(
+                        r"dir /s/b {search} > files.txt".format(
+                            search=os.path.join(
+                                self.search_loc.get(),
+                                "*{file}*".format(file=self.search_var.get()),
+                            )
+                        )
+                    )
+            if "scandir_rs" not in sys.modules:
+                with open("files.txt", "r") as f:
+                    for line in f:
+                        file_count += 1
+                        self.dirs.append(os.path.dirname(line))
+                        curr_prog["text"] = "Files Found: {0}".format(file_count)
+                        curr_prog.update()
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
         # print(self.dirs)
@@ -197,11 +229,6 @@ class file_walker:
         self.inside_search_files = []
         # if sys.version_info >= (3, 0):
         if platform.system() == "Linux":
-            print(
-                'grep -sRil "{text}" {location} > files.txt'.format(
-                    text=self.search_var.get(), location=self.search_loc.get()
-                )
-            )
             os.system(
                 'grep -sRil "{text}" {location} > files.txt'.format(
                     text=self.search_var.get(), location=self.search_loc.get()
@@ -218,7 +245,6 @@ class file_walker:
             for line in f:
                 files.append(os.path.dirname(line))
                 self.inside_search_files.append(os.path.normpath(line.strip()))
-        print("self.inside_search_files=", self.inside_search_files)
         return files
 
     def populate_tree(self, tree, node):
@@ -234,16 +260,12 @@ class file_walker:
                 ptype = "directory"
                 if not any(p in substring for substring in self.dirs):
                     continue
-                # if not any(p in substring for substring in self.inside_search_files):
-                #    continue
             elif os.path.isfile(p):
                 ptype = "file"
             fname = os.path.split(p)[1]
             if ptype != "file":
                 id = tree.insert(node, "end", text=fname, values=[p, ptype])
             else:
-                print(p in self.inside_search_files)
-                print(p)
                 if self.search_var.get() in fname or p in self.inside_search_files:
                     id = tree.insert(node, "end", text=fname, values=[p, ptype])
                 else:
