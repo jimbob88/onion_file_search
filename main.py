@@ -60,6 +60,24 @@ def linux_cmd_search(search_var, search_loc):
         return [(os.path.dirname(line)) for line in f]
 
 
+def file_counter_win(top_master):
+    prog_win = tk.Toplevel(master=top_master)
+    prog_win.title("Progress")
+    prog_win.resizable(False, False)
+    if platform.system() == "Linux":
+        prog_win.wm_attributes("-type", "splash")
+    else:
+        prog_win.overrideredirect(1)
+    prog_win.attributes("-topmost", True)
+    prog_win.geometry(
+        "150x22+{:.0f}+{:.0f}".format(
+            top_master.winfo_x() + (top_master.winfo_width()) - 150,
+            top_master.winfo_y() + (top_master.winfo_height()) - 22,
+        )
+    )
+    return prog_win
+
+
 class file_walker:
     def __init__(self, master):
         self.master = master
@@ -147,20 +165,8 @@ class file_walker:
         Search but with a counter for the number of currently found files
         Tries to mimic the functionality of catfish but if you mimize onion_file_search it stays open, needs fixing
         """
-        prog_win = tk.Toplevel(master=self.master)
-        prog_win.title("Progress")
-        prog_win.resizable(False, False)
-        if platform.system() == "Linux":
-            prog_win.wm_attributes("-type", "splash")
-        else:
-            prog_win.overrideredirect(1)
-        prog_win.attributes("-topmost", True)
-        prog_win.geometry(
-            "150x22+{:.0f}+{:.0f}".format(
-                self.master.winfo_x() + (self.master.winfo_width()) - 150,
-                self.master.winfo_y() + (self.master.winfo_height()) - 22,
-            )
-        )  # self.master.winfo_height(), self.master.winfo_width()
+
+        prog_win = file_counter_win(self.master)
 
         curr_prog = ttk.Label(prog_win, text="Files Found: ")
         curr_prog.grid(row=0, column=0, sticky="nsew")
