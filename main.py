@@ -24,6 +24,14 @@ except:
 from custom_treeview import ScrolledTreeView
 
 
+def os_walk_search(search_loc, search_var):
+    dirs = []
+    for root, directories, filenames in os.walk(search_loc):
+        if any([search_var in filename for filename in filenames]):
+            dirs.append(root)
+    return dirs
+
+
 def scandir_rs_search(search_loc, search_var):
     dirs = []
     for root, directories, filenames in scandir_rs.walk.Walk(search_loc):
@@ -89,7 +97,6 @@ class file_walker:
         self.search_vew["columns"] = ("fullpath", "type", "size", "Last Access")
         self.search_vew["displaycolumns"] = ("size", "Last Access")
         for col in self.search_vew["columns"]:
-            # self.search_vew.column(col, width=80)
             self.search_vew.heading(col, text=col[0].upper() + col[1:])
 
         self.master.grid_rowconfigure(1, weight=1)
@@ -110,9 +117,7 @@ class file_walker:
         self.search_but.configure(state="disabled")
         self.dirs = []
         if platform.system() not in ["Linux", "Windows"]:
-            for root, directories, filenames in os.walk(self.search_loc.get()):
-                if any([self.search_var.get() in filename for filename in filenames]):
-                    self.dirs.append(root)
+            self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
         else:
             if platform.system() == "Linux":
                 self.dirs = linux_cmd_search(
@@ -164,10 +169,9 @@ class file_walker:
         prog_win.grid_columnconfigure(0, weight=1)
 
         self.search_but.configure(state="disabled")
-        file_count = 0
         self.dirs = []
         if not platform.system() in ["Linux", "Windows"]:
-            self.dirs = windows_cmd_search(self.search_loc.get(), self.search_var())
+            self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
         else:
             if platform.system() == "Linux":
                 self.dirs = linux_cmd_search(
