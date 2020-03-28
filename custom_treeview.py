@@ -101,14 +101,16 @@ class ScrolledTreeView(AutoScroll, ttk.Treeview):
 
 def _bound_to_mousewheel(event, widget):
     child = widget.winfo_children()[0]
+    mswheel_func = lambda e: _on_mousewheel(e, child)
+    msshift_func = lambda e: _on_shiftmouse(e, child)
     if platform.system() == "Linux":
-        child.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Shift-MouseWheel>", lambda e: _on_shiftmouse(e, child))
+        child.bind_all("<MouseWheel>", mswheel_func)
+        child.bind_all("<Shift-MouseWheel>", msshift_func)
     else:
-        child.bind_all("<Button-4>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Button-5>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Shift-Button-4>", lambda e: _on_shiftmouse(e, child))
-        child.bind_all("<Shift-Button-5>", lambda e: _on_shiftmouse(e, child))
+        child.bind_all("<Button-4>", mswheel_func)
+        child.bind_all("<Button-5>", mswheel_func)
+        child.bind_all("<Shift-Button-4>", msshift_func)
+        child.bind_all("<Shift-Button-5>", msshift_func)
 
 
 def _unbound_to_mousewheel(event, widget):
