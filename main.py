@@ -60,6 +60,16 @@ def linux_cmd_search(search_var, search_loc):
         return [(os.path.dirname(line)) for line in f]
 
 
+def not_darwin_search(search_loc, search_var):
+    if platform.system() == "Linux":
+        return linux_cmd_search(search_loc, search_var)
+    else:
+        if "scandir_rs" in sys.modules:
+            return scandir_rs_search(search_loc, search_var)
+        else:
+            return windows_cmd_search(search_loc, search_var)
+
+
 def file_counter_win(top_master):
     prog_win = tk.Toplevel(master=top_master)
     prog_win.title("Progress")
@@ -136,17 +146,8 @@ class file_walker:
 
         if platform.system() == "Darwin":
             self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
-        elif platform.system() == "Linux":
-            self.dirs = linux_cmd_search(self.search_loc.get(), self.search_var.get())
         else:
-            if "scandir_rs" in sys.modules:
-                self.dirs = scandir_rs_search(
-                    self.search_loc.get(), self.search_var.get()
-                )
-            else:
-                self.dirs = windows_cmd_search(
-                    self.search_loc.get(), self.search_var.get()
-                )
+            self.dirs = not_darwin_search(self.search_loc.get(), self.search_var.get())
 
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
@@ -175,17 +176,8 @@ class file_walker:
 
         if platform.system() == "Darwin":
             self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
-        elif platform.system() == "Linux":
-            self.dirs = linux_cmd_search(self.search_loc.get(), self.search_var.get())
         else:
-            if "scandir_rs" in sys.modules:
-                self.dirs = scandir_rs_search(
-                    self.search_loc.get(), self.search_var.get()
-                )
-            else:
-                self.dirs = windows_cmd_search(
-                    self.search_loc.get(), self.search_var.get()
-                )
+            self.dirs = not_darwin_search(self.search_loc.get(), self.search_var.get())
 
         for file_count, directory in enumerate(self.dirs):
             if file_count % 100 == 1:
