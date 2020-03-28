@@ -21,6 +21,36 @@ try:
 except:
     pass
 
+from custom_treeview import ScrolledTreeView
+
+
+def scandir_rs_search(search_loc, search_var):
+    dirs = []
+    for root, directories, filenames in scandir_rs.walk.Walk(search_loc):
+        if any([search_var in filename for filename in filenames]):
+            dirs.append(root)
+    return dirs
+
+
+def windows_cmd_search(search_var, search_loc):
+    os.system(
+        r"dir /s/b {search} > files.txt".format(
+            search=os.path.join(search_loc, "*{file}*".format(file=search_var),)
+        )
+    )
+    with open("files.txt", "r") as f:
+        return [(os.path.dirname(line)) for line in f]
+
+
+def linux_cmd_search(search_var, search_loc):
+    os.system(
+        'find {location} -name "*{search_term}*" > ./files.txt'.format(
+            location=search_loc, search_term=search_var,
+        )
+    )
+    with open("files.txt", "r") as f:
+        return [(os.path.dirname(line)) for line in f]
+
 
 class file_walker:
     def __init__(self, master):
@@ -79,42 +109,24 @@ class file_walker:
             return self.search_win(self, *args)
         self.search_but.configure(state="disabled")
         self.dirs = []
-        if not platform.system() in ["Linux", "Windows"]:
+        if platform.system() not in ["Linux", "Windows"]:
             for root, directories, filenames in os.walk(self.search_loc.get()):
                 if any([self.search_var.get() in filename for filename in filenames]):
                     self.dirs.append(root)
         else:
             if platform.system() == "Linux":
-                os.system(
-                    'find {location} -name "*{search_term}*" > ./files.txt'.format(
-                        location=self.search_loc.get(),
-                        search_term=self.search_var.get(),
-                    )
+                self.dirs = linux_cmd_search(
+                    self.search_loc.get(), self.search_var.get()
                 )
             elif platform.system() == "Windows":
                 if "scandir_rs" in sys.modules:
-                    for root, directories, filenames in scandir_rs.walk.Walk(
-                        self.search_loc.get()
-                    ):
-                        if any(
-                            [
-                                self.search_var.get() in filename
-                                for filename in filenames
-                            ]
-                        ):
-                            self.dirs.append(root)
-                else:
-                    os.system(
-                        r"dir /s/b {search} > files.txt".format(
-                            search=os.path.join(
-                                self.search_loc.get(),
-                                "*{file}*".format(file=self.search_var.get()),
-                            )
-                        )
+                    self.dirs = scandir_rs_search(
+                        self.search_loc.get(), self.search_var.get()
                     )
-            if "scandir_rs" not in sys.modules:
-                with open("files.txt", "r") as f:
-                    self.dirs = [(os.path.dirname(line)) for line in f]
+                else:
+                    self.dirs = windows_cmd_search(
+                        self.search_loc.get(), self.search_var.get()
+                    )
 
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
@@ -155,66 +167,32 @@ class file_walker:
         file_count = 0
         self.dirs = []
         if not platform.system() in ["Linux", "Windows"]:
-            for root, directories, filenames in os.walk(self.search_loc.get()):
-                if any([self.search_var.get() in filename for filename in filenames]):
-                    self.dirs.append(root)
-                for filename in filenames:
-                    if self.search_var.get() in filename:
-                        file_count += 1
-                        if file_count % 100 == 1:
-                            curr_prog["text"] = "Files Found: {0}".format(file_count)
-                            curr_prog.update()
-                        curr_prog["text"] = "Files Found: {0}".format(file_count)
-                        curr_prog.update()
+            self.dirs = windows_cmd_search(self.search_loc.get(), self.search_var())
         else:
             if platform.system() == "Linux":
-                os.system(
-                    'find {location} -name "*{search_term}*" > ./files.txt'.format(
-                        location=self.search_loc.get(),
-                        search_term=self.search_var.get(),
-                    )
+                self.dirs = linux_cmd_search(
+                    self.search_loc.get(), self.search_var.get()
                 )
             elif platform.system() == "Windows":
                 if "scandir_rs" in sys.modules:
-                    for root, directories, filenames in scandir_rs.walk.Walk(
-                        self.search_loc.get()
-                    ):
-                        if any(
-                            [
-                                self.search_var.get() in filename
-                                for filename in filenames
-                            ]
-                        ):
-                            self.dirs.append(root)
-                        for filename in filenames:
-                            if self.search_var.get() in filename:
-                                file_count += 1
-                                if file_count % 100 == 1:
-                                    curr_prog["text"] = "Files Found: {0}".format(
-                                        file_count
-                                    )
-                                    curr_prog.update()
-                    curr_prog["text"] = "Files Found: {0}".format(file_count)
-                    curr_prog.update()
-                else:
-                    os.system(
-                        r"dir /s/b {search} > files.txt".format(
-                            search=os.path.join(
-                                self.search_loc.get(),
-                                "*{file}*".format(file=self.search_var.get()),
-                            )
-                        )
+                    self.dirs = scandir_rs_search(
+                        self.search_loc.get(), self.search_var.get()
                     )
-            if "scandir_rs" not in sys.modules:
-                with open("files.txt", "r") as f:
-                    for line in f:
-                        file_count += 1
-                        self.dirs.append(os.path.dirname(line))
-                        curr_prog["text"] = "Files Found: {0}".format(file_count)
-                        curr_prog.update()
+                else:
+                    self.dirs = windows_cmd_search(
+                        self.search_loc.get(), self.search_var.get()
+                    )
+
+        for file_count, directory in enumerate(self.dirs):
+            if file_count % 100 == 1:
+                curr_prog["text"] = "Files Found: {0}".format(file_count)
+                curr_prog.update()
+            curr_prog["text"] = "Files Found: {0}".format(file_count)
+            curr_prog.update()
+
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
-        # print(self.dirs)
+
         self.search_vew.delete(*self.search_vew.get_children())
         dir = os.path.abspath(self.search_loc.get())
         node = self.search_vew.insert("", "end", text=dir, values=[dir, "directory"])
@@ -285,154 +263,13 @@ class file_walker:
         self.populate_tree(tree, tree.focus())
 
 
-###################### Made By Guilherme Polo - all rights reserved (via http://page.sourceforge.net/) ######################
-class AutoScroll(object):
-    """Configure the scrollbars for a widget."""
-
-    def __init__(self, master):
-        #  Rozen. Added the try-except clauses so that this class
-        #  could be used for scrolled entry widget for which vertical
-        #  scrolling is not supported. 5/7/14.
-        try:
-            vsb = ttk.Scrollbar(master, orient="vertical", command=self.yview)
-        except:
-            pass
-        hsb = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
-
-        # self.configure(yscrollcommand=_autoscroll(vsb),
-        #    xscrollcommand=_autoscroll(hsb))
-        try:
-            self.configure(yscrollcommand=self._autoscroll(vsb))
-        except:
-            pass
-        self.configure(xscrollcommand=self._autoscroll(hsb))
-
-        self.grid(column=0, row=0, sticky="nsew")
-        try:
-            vsb.grid(column=1, row=0, sticky="ns")
-        except:
-            pass
-        hsb.grid(column=0, row=1, sticky="ew")
-
-        master.grid_columnconfigure(0, weight=1)
-        master.grid_rowconfigure(0, weight=1)
-
-        # Copy geometry methods of master  (taken from Scrolledtext.py)
-        if sys.version_info >= (3, 0):
-            methods = (
-                tk.Pack.__dict__.keys()
-                | tk.Grid.__dict__.keys()
-                | tk.Place.__dict__.keys()
-            )
-        else:
-            methods = (
-                tk.Pack.__dict__.keys()
-                + tk.Grid.__dict__.keys()
-                + tk.Place.__dict__.keys()
-            )
-
-        for meth in methods:
-            if meth[0] != "_" and meth not in ("config", "configure"):
-                setattr(self, meth, getattr(master, meth))
-
-    @staticmethod
-    def _autoscroll(sbar):
-        """Hide and show scrollbar as needed."""
-
-        def wrapped(first, last):
-            first, last = float(first), float(last)
-            if first <= 0 and last >= 1:
-                sbar.grid_remove()
-            else:
-                sbar.grid()
-            sbar.set(first, last)
-
-        return wrapped
-
-    def __str__(self):
-        return str(self.master)
-
-
-def _create_container(func):
-    """Creates a ttk Frame with a given master, and use this new frame to
-    place the scrollbars and the widget."""
-
-    def wrapped(cls, master, **kw):
-        container = ttk.Frame(master)
-        container.bind("<Enter>", lambda e: _bound_to_mousewheel(e, container))
-        container.bind("<Leave>", lambda e: _unbound_to_mousewheel(e, container))
-        return func(cls, container, **kw)
-
-    return wrapped
-
-
-class ScrolledTreeView(AutoScroll, ttk.Treeview):
-    """A standard ttk Treeview widget with scrollbars that will
-    automatically show/hide as needed."""
-
-    @_create_container
-    def __init__(self, master, **kw):
-        ttk.Treeview.__init__(self, master, **kw)
-        AutoScroll.__init__(self, master)
-
-
-def _bound_to_mousewheel(event, widget):
-    child = widget.winfo_children()[0]
-    if platform.system() == "Windows" or platform.system() == "Darwin":
-        child.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Shift-MouseWheel>", lambda e: _on_shiftmouse(e, child))
-    else:
-        child.bind_all("<Button-4>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Button-5>", lambda e: _on_mousewheel(e, child))
-        child.bind_all("<Shift-Button-4>", lambda e: _on_shiftmouse(e, child))
-        child.bind_all("<Shift-Button-5>", lambda e: _on_shiftmouse(e, child))
-
-
-def _unbound_to_mousewheel(event, widget):
-    if platform.system() == "Windows" or platform.system() == "Darwin":
-        widget.unbind_all("<MouseWheel>")
-        widget.unbind_all("<Shift-MouseWheel>")
-    else:
-        widget.unbind_all("<Button-4>")
-        widget.unbind_all("<Button-5>")
-        widget.unbind_all("<Shift-Button-4>")
-        widget.unbind_all("<Shift-Button-5>")
-
-
-def _on_mousewheel(event, widget):
-    if platform.system() == "Windows":
-        widget.yview_scroll(-1 * int(event.delta / 120), "units")
-    elif platform.system() == "Darwin":
-        widget.yview_scroll(-1 * int(event.delta), "units")
-    else:
-        if event.num == 4:
-            widget.yview_scroll(-1, "units")
-        elif event.num == 5:
-            widget.yview_scroll(1, "units")
-
-
-def _on_shiftmouse(event, widget):
-    if platform.system() == "Windows":
-        widget.xview_scroll(-1 * int(event.delta / 120), "units")
-    elif platform.system() == "Darwin":
-        widget.xview_scroll(-1 * int(event.delta), "units")
-    else:
-        if event.num == 4:
-            widget.xview_scroll(-1, "units")
-        elif event.num == 5:
-            widget.xview_scroll(1, "units")
-
-
 def main():
     if "ttkthemes" in sys.modules:
         root = ttkthemes.ThemedTk()
         file_walker_gui = file_walker(root)
 
         if platform.system() == "Linux":
-            if platform.dist()[0] == "Ubuntu":
-                root.set_theme("ubuntu")
-            else:
-                root.set_theme("equilux")
+            root.set_theme("equilux")
         elif platform.system() == "Windows":
             root.set_theme("vista")
         elif platform.system() == "Darwin":
