@@ -133,23 +133,20 @@ class file_walker:
         if self.show_prog.get():
             return self.search_win(self, *args)
         self.search_but.configure(state="disabled")
-        self.dirs = []
-        if platform.system() not in ["Linux", "Windows"]:
+
+        if platform.system() == "Darwin":
             self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
+        elif platform.system() == "Linux":
+            self.dirs = linux_cmd_search(self.search_loc.get(), self.search_var.get())
         else:
-            if platform.system() == "Linux":
-                self.dirs = linux_cmd_search(
+            if "scandir_rs" in sys.modules:
+                self.dirs = scandir_rs_search(
                     self.search_loc.get(), self.search_var.get()
                 )
-            elif platform.system() == "Windows":
-                if "scandir_rs" in sys.modules:
-                    self.dirs = scandir_rs_search(
-                        self.search_loc.get(), self.search_var.get()
-                    )
-                else:
-                    self.dirs = windows_cmd_search(
-                        self.search_loc.get(), self.search_var.get()
-                    )
+            else:
+                self.dirs = windows_cmd_search(
+                    self.search_loc.get(), self.search_var.get()
+                )
 
         if self.search_inside_var.get():
             self.dirs += self.search_inside()
@@ -175,23 +172,20 @@ class file_walker:
         prog_win.grid_columnconfigure(0, weight=1)
 
         self.search_but.configure(state="disabled")
-        self.dirs = []
-        if not platform.system() in ["Linux", "Windows"]:
+
+        if platform.system() == "Darwin":
             self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
+        elif platform.system() == "Linux":
+            self.dirs = linux_cmd_search(self.search_loc.get(), self.search_var.get())
         else:
-            if platform.system() == "Linux":
-                self.dirs = linux_cmd_search(
+            if "scandir_rs" in sys.modules:
+                self.dirs = scandir_rs_search(
                     self.search_loc.get(), self.search_var.get()
                 )
-            elif platform.system() == "Windows":
-                if "scandir_rs" in sys.modules:
-                    self.dirs = scandir_rs_search(
-                        self.search_loc.get(), self.search_var.get()
-                    )
-                else:
-                    self.dirs = windows_cmd_search(
-                        self.search_loc.get(), self.search_var.get()
-                    )
+            else:
+                self.dirs = windows_cmd_search(
+                    self.search_loc.get(), self.search_var.get()
+                )
 
         for file_count, directory in enumerate(self.dirs):
             if file_count % 100 == 1:
