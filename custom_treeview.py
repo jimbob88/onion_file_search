@@ -103,7 +103,7 @@ def _bound_to_mousewheel(event, widget):
     child = widget.winfo_children()[0]
     mswheel_func = lambda e: _on_mousewheel(e, child)
     msshift_func = lambda e: _on_shiftmouse(e, child)
-    if platform.system() == "Linux":
+    if platform.system() != "Linux":
         child.bind_all("<MouseWheel>", mswheel_func)
         child.bind_all("<Shift-MouseWheel>", msshift_func)
     else:
