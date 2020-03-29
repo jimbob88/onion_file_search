@@ -1,14 +1,11 @@
-try:
-    import tkinter as tk
-    import tkinter.ttk as ttk
-except:
-    import Tkinter as tk
-    import ttk
-
+import tkinter as tk
+import tkinter.ttk as ttk
 import platform
 import sys
 
 ###################### Made By Guilherme Polo - all rights reserved (via http://page.sourceforge.net/) ######################
+
+
 class AutoScroll(object):
     """Configure the scrollbars for a widget."""
 
@@ -83,7 +80,8 @@ def _create_container(func):
     def wrapped(cls, master, **kw):
         container = ttk.Frame(master)
         container.bind("<Enter>", lambda e: _bound_to_mousewheel(e, container))
-        container.bind("<Leave>", lambda e: _unbound_to_mousewheel(e, container))
+        container.bind(
+            "<Leave>", lambda e: _unbound_to_mousewheel(e, container))
         return func(cls, container, **kw)
 
     return wrapped
@@ -101,8 +99,8 @@ class ScrolledTreeView(AutoScroll, ttk.Treeview):
 
 def _bound_to_mousewheel(event, widget):
     child = widget.winfo_children()[0]
-    mswheel_func = lambda e: _on_mousewheel(e, child)
-    msshift_func = lambda e: _on_shiftmouse(e, child)
+    def mswheel_func(e): return _on_mousewheel(e, child)
+    def msshift_func(e): return _on_shiftmouse(e, child)
     if platform.system() != "Linux":
         child.bind_all("<MouseWheel>", mswheel_func)
         child.bind_all("<Shift-MouseWheel>", msshift_func)

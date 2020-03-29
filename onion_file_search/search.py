@@ -29,7 +29,8 @@ def scandir_rs_search(search_loc, search_var):
 def windows_cmd_search(search_loc, search_var):
     os.system(
         r"dir /s/b {search} > files.txt".format(
-            search=os.path.join(search_loc, "*{file}*".format(file=search_var),)
+            search=os.path.join(
+                search_loc, "*{file}*".format(file=search_var),)
         )
     )
     with open("files.txt", "r") as f:
