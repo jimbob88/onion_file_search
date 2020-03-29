@@ -22,32 +22,37 @@ except:
     pass
 
 from custom_treeview import ScrolledTreeView
+from benedict import benedict
+from itertools import product
 
 
 def os_walk_search(search_loc, search_var):
-    dirs = []
+    files = []
     for root, directories, filenames in os.walk(search_loc):
-        if any([search_var in filename for filename in filenames]):
-            dirs.append(root)
-    return dirs
+        for filename in filenames:
+            if search_var in filename:
+                files.append(os.path.join(root, filename))
+    return files
 
 
 def scandir_rs_search(search_loc, search_var):
-    dirs = []
+    files = []
     for root, directories, filenames in scandir_rs.walk.Walk(search_loc):
-        if any([search_var in filename for filename in filenames]):
-            dirs.append(root)
-    return dirs
+        # if any([search_var in filename for filename in filenames]):
+        for filename in filenames:
+            if search_var in filename:
+                files.append(os.path.join(root, filename))
+    return files
 
 
-def windows_cmd_search(search_var, search_loc):
+def windows_cmd_search(search_loc, search_var):
     os.system(
         r"dir /s/b {search} > files.txt".format(
             search=os.path.join(search_loc, "*{file}*".format(file=search_var),)
         )
     )
     with open("files.txt", "r") as f:
-        return [(os.path.dirname(line)) for line in f]
+        return f.read().splitlines()
 
 
 def linux_cmd_search(search_var, search_loc):
@@ -57,7 +62,7 @@ def linux_cmd_search(search_var, search_loc):
         )
     )
     with open("files.txt", "r") as f:
-        return [(os.path.dirname(line)) for line in f]
+        return f.read().splitlines()
 
 
 def not_darwin_search(search_loc, search_var):
@@ -86,6 +91,21 @@ def file_counter_win(top_master):
         )
     )
     return prog_win
+
+
+def get_all_values(tree, nested_dictionary, build_path=""):
+    for key, value in nested_dictionary.items():
+        path = os.path.join(build_path, key)
+        if type(value) is dict:
+            tree.insert(build_path, "end", path, text=key, values=[path, "directory"])
+            get_all_values(tree, value, path)
+        else:
+            tree.insert(build_path, "end", path, text=key, values=[path, "file"])
+            _stat = os.stat(path.replace(":", ":\\"))
+            size = _stat.st_size
+            tree.set(path, "size", "%d bytes" % size)
+            modified = time.ctime(_stat[stat.ST_MTIME])
+            tree.set(path, "Last Access", modified)
 
 
 class file_walker:
@@ -132,10 +152,8 @@ class file_walker:
 
         self.search_but = ttk.Button(self.master, text="Search", command=self.search)
         self.search_but.grid(row=0, column=2)
-
-        self.master.bind("<<TreeviewOpen>>", self.update_tree)
-
-        self.dirs = []
+        
+        self.files = []
 
     def search(self, *args):
         if not os.path.isdir(self.search_loc.get()):
@@ -145,17 +163,15 @@ class file_walker:
         self.search_but.configure(state="disabled")
 
         if platform.system() == "Darwin":
-            self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
+            self.files = os_walk_search(self.search_loc.get(), self.search_var.get())
         else:
-            self.dirs = not_darwin_search(self.search_loc.get(), self.search_var.get())
+            self.files = not_darwin_search(self.search_loc.get(), self.search_var.get())
 
         if self.search_inside_var.get():
-            self.dirs += self.search_inside()
+            self.files += self.search_inside()
 
         self.search_vew.delete(*self.search_vew.get_children())
-        dir = os.path.abspath(self.search_loc.get())
-        node = self.search_vew.insert("", "end", text=dir, values=[dir, "directory"])
-        self.populate_tree(self.search_vew, node)
+        self.populate_tree()
         self.search_but.configure(state="normal")
 
     def search_win(self, *args):
@@ -175,11 +191,11 @@ class file_walker:
         self.search_but.configure(state="disabled")
 
         if platform.system() == "Darwin":
-            self.dirs = os_walk_search(self.search_loc.get(), self.search_var.get())
+            self.files = os_walk_search(self.search_loc.get(), self.search_var.get())
         else:
-            self.dirs = not_darwin_search(self.search_loc.get(), self.search_var.get())
+            self.files = not_darwin_search(self.search_loc.get(), self.search_var.get())
 
-        for file_count, directory in enumerate(self.dirs):
+        for file_count, directory in enumerate(self.files):
             if file_count % 100 == 1:
                 curr_prog["text"] = "Files Found: {0}".format(file_count)
                 curr_prog.update()
@@ -187,12 +203,10 @@ class file_walker:
             curr_prog.update()
 
         if self.search_inside_var.get():
-            self.dirs += self.search_inside()
+            self.files += self.search_inside()
 
         self.search_vew.delete(*self.search_vew.get_children())
-        dir = os.path.abspath(self.search_loc.get())
-        node = self.search_vew.insert("", "end", text=dir, values=[dir, "directory"])
-        self.populate_tree(self.search_vew, node)
+        self.populate_tree()
         self.search_vew.update()
         self.search_but.configure(state="normal")
 
@@ -201,7 +215,6 @@ class file_walker:
     def search_inside(self):
         files = []
         self.inside_search_files = []
-        # if sys.version_info >= (3, 0):
         if platform.system() == "Linux":
             os.system(
                 'grep -sRil "{text}" {location} > files.txt'.format(
@@ -221,43 +234,18 @@ class file_walker:
                 self.inside_search_files.append(os.path.normpath(line.strip()))
         return files
 
-    def populate_tree(self, tree, node):
-        if tree.set(node, "type") != "directory":
-            return
-        path = tree.set(node, "fullpath")
-        tree.delete(*tree.get_children(node))
-        parent = tree.parent(node)
-        for p in os.listdir(path):
-            ptype = None
-            p = os.path.join(path, p)
-            if os.path.isdir(p):
-                ptype = "directory"
-                if not any(p in substring for substring in self.dirs):
-                    continue
-            elif os.path.isfile(p):
-                ptype = "file"
-            fname = os.path.split(p)[1]
-            if ptype != "file":
-                id = tree.insert(node, "end", text=fname, values=[p, ptype])
-            else:
-                if self.search_var.get() in fname or p in self.inside_search_files:
-                    id = tree.insert(node, "end", text=fname, values=[p, ptype])
-                else:
-                    continue
-            if ptype == "directory":
-                tree.insert(id, 0, text="dummy")
-                tree.item(id, text=fname)
-            elif ptype == "file":
-                _stat = os.stat(p)
-                size = _stat.st_size
-                tree.set(id, "size", "%d bytes" % size)
-                modified = time.ctime(_stat[stat.ST_MTIME])
-                tree.set(id, "Last Access", modified)
-
-    def update_tree(self, event):
-        tree = event.widget
-        self.populate_tree(tree, tree.focus())
-
+    def populate_tree(self):
+        file_tree = benedict({}, keypath_separator=os.sep)
+        for_merge = []
+        for file_path in self.files:
+            for_merge.append(benedict(keypath_separator=os.sep))
+            for_merge[-1][file_path.replace("[", "\\[").replace("]", "\\]")] = [
+                "file",
+                file_path,
+            ]
+        file_tree.merge(*for_merge)
+        self.file_tree = file_tree
+        get_all_values(self.search_vew, self.file_tree, build_path="")
 
 def main():
     if "ttkthemes" in sys.modules:
