@@ -51,6 +51,14 @@ class file_walker:
         self.master = master
         self.master.title("Onion Search")
 
+        self.init_menubar()
+        self.init_searchbar()
+        self.init_treeview()
+
+        self.files = []
+        self.inside_search_files = []
+
+    def init_menubar(self):
         self.menubar = tk.Menu(self.master)
         self.master.configure(menu=self.menubar)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
@@ -63,6 +71,8 @@ class file_walker:
             label="Search Inside TextFiles", variable=self.search_inside_var
         )
         self.menubar.add_cascade(label="File", menu=self.filemenu)
+
+    def init_searchbar(self):
         self.search_loc = tk.StringVar()
         self.search_loc.set(os.path.expanduser("~"))
         ttk.Combobox(
@@ -76,6 +86,11 @@ class file_walker:
         self.search_bar = ttk.Entry(self.master, textvariable=self.search_var)
         self.search_bar.grid(row=0, column=1, sticky="nsew")
 
+        self.search_but = ttk.Button(
+            self.master, text="Search", command=self.search)
+        self.search_but.grid(row=0, column=2)
+
+    def init_treeview(self):
         self.search_vew = ScrolledTreeView(self.master)
         self.search_vew.grid(row=1, column=0, columnspan=3, sticky="nsew")
 
@@ -89,12 +104,6 @@ class file_walker:
         self.master.grid_rowconfigure(1, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
 
-        self.search_but = ttk.Button(
-            self.master, text="Search", command=self.search)
-        self.search_but.grid(row=0, column=2)
-
-        self.files = []
-        self.inside_search_files = []
 
     def search(self, *args):
         if not os.path.isdir(self.search_loc.get()):
