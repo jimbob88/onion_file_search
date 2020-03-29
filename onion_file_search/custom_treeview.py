@@ -140,8 +140,7 @@ def _on_shiftmouse(event, widget):
         widget.xview_scroll(-1 * int(event.delta / 120), "units")
     elif platform.system() == "Darwin":
         widget.xview_scroll(-1 * int(event.delta), "units")
-    else:
-        if event.num == 4:
-            widget.xview_scroll(-1, "units")
-        elif event.num == 5:
-            widget.xview_scroll(1, "units")
+    elif event.num == 4:
+        widget.xview_scroll(-1, "units")
+    elif event.num == 5:
+        widget.xview_scroll(1, "units")
