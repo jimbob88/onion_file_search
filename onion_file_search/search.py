@@ -4,7 +4,7 @@ import sys
 
 try:
     import scandir_rs
-except:
+except ImportError:
     pass
 
 

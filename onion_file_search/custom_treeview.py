@@ -3,11 +3,11 @@ import tkinter.ttk as ttk
 import platform
 import sys
 
-###################### Made By Guilherme Polo - all rights reserved (via http://page.sourceforge.net/) ######################
-
 
 class AutoScroll(object):
-    """Configure the scrollbars for a widget."""
+    """
+    Made By Guilherme Polo:
+    all rights reserved (via http://page.sourceforge.net/) """
 
     def __init__(self, master):
         #  Rozen. Added the try-except clauses so that this class
@@ -15,7 +15,7 @@ class AutoScroll(object):
         #  scrolling is not supported. 5/7/14.
         try:
             vsb = ttk.Scrollbar(master, orient="vertical", command=self.yview)
-        except:
+        except Exception:
             pass
         hsb = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
 
@@ -23,14 +23,14 @@ class AutoScroll(object):
         #    xscrollcommand=_autoscroll(hsb))
         try:
             self.configure(yscrollcommand=self._autoscroll(vsb))
-        except:
+        except Exception:
             pass
         self.configure(xscrollcommand=self._autoscroll(hsb))
 
         self.grid(column=0, row=0, sticky="nsew")
         try:
             vsb.grid(column=1, row=0, sticky="ns")
-        except:
+        except Exception:
             pass
         hsb.grid(column=0, row=1, sticky="ew")
 

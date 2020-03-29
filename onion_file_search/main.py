@@ -8,12 +8,12 @@ from time import ctime
 
 try:
     import ttkthemes
-except Exception:
+except ImportError:
     pass
 
 try:
     from benedict import benedict
-except Exception:
+except ImportError:
     raise ImportError(
         """
         onion_file_search now relies on python-benedict,
