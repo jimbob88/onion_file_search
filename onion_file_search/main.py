@@ -203,22 +203,26 @@ class file_walker:
 
 
 def main():
-    if "ttkthemes" in sys.modules:
-        root = ttkthemes.ThemedTk()
-        file_walker(root)
+    root = tk.Tk()
+    file_walker(root)
+    root.mainloop()
 
-        if platform.system() == "Linux":
-            root.set_theme("equilux")
-        elif platform.system() == "Windows":
-            root.set_theme("vista")
-        elif platform.system() == "Darwin":
-            root.set_theme("aqua")
-        root.mainloop()
-    else:
-        root = tk.Tk()
-        file_walker(root)
-        root.mainloop()
+
+def themed_main():
+    root = ttkthemes.ThemedTk()
+    file_walker(root)
+
+    if platform.system() == "Linux":
+        root.set_theme("equilux")
+    elif platform.system() == "Windows":
+        root.set_theme("vista")
+    elif platform.system() == "Darwin":
+        root.set_theme("aqua")
+    root.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    if "ttkthemes" in sys.modules:
+        themed_main()
+    else:
+        main()
