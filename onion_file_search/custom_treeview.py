@@ -7,53 +7,38 @@ import sys
 class AutoScroll(object):
     """
     Made By Guilherme Polo:
-    all rights reserved (via http://page.sourceforge.net/) """
+    all rights reserved (via http://page.sourceforge.net/)
+    """
 
     def __init__(self, master):
-        #  Rozen. Added the try-except clauses so that this class
-        #  could be used for scrolled entry widget for which vertical
-        #  scrolling is not supported. 5/7/14.
-        try:
-            vsb = ttk.Scrollbar(master, orient="vertical", command=self.yview)
-        except Exception:
-            pass
-        hsb = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
-
-        # self.configure(yscrollcommand=_autoscroll(vsb),
-        #    xscrollcommand=_autoscroll(hsb))
-        try:
-            self.configure(yscrollcommand=self._autoscroll(vsb))
-        except Exception:
-            pass
-        self.configure(xscrollcommand=self._autoscroll(hsb))
-
-        self.grid(column=0, row=0, sticky="nsew")
-        try:
-            vsb.grid(column=1, row=0, sticky="ns")
-        except Exception:
-            pass
-        hsb.grid(column=0, row=1, sticky="ew")
-
+        
+        self.set_xscroll(master)
+        self.set_yscroll(master)
+        
         master.grid_columnconfigure(0, weight=1)
         master.grid_rowconfigure(0, weight=1)
 
-        # Copy geometry methods of master  (taken from Scrolledtext.py)
-        if sys.version_info >= (3, 0):
-            methods = (
-                tk.Pack.__dict__.keys()
-                | tk.Grid.__dict__.keys()
-                | tk.Place.__dict__.keys()
-            )
-        else:
-            methods = (
-                tk.Pack.__dict__.keys()
-                + tk.Grid.__dict__.keys()
-                + tk.Place.__dict__.keys()
-            )
-
+        methods = tk.Grid.__dict__.keys()
         for meth in methods:
-            if meth[0] != "_" and meth not in ("config", "configure"):
+            if meth[0] != '_' and meth not in ("config", "configure"):
                 setattr(self, meth, getattr(master, meth))
+
+    def set_xscroll(self, master):
+        hsb = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
+        
+        self.configure(xscrollcommand=self._autoscroll(hsb))
+
+        self.grid(column=0, row=0, sticky="nsew")
+        
+        hsb.grid(column=0, row=1, sticky="ew")
+
+    def set_yscroll(self, master):
+        try:
+            vsb = ttk.Scrollbar(master, orient="vertical", command=self.yview)
+            self.configure(yscrollcommand=self._autoscroll(vsb))
+            vsb.grid(column=1, row=0, sticky="ns")
+        except Exception:
+            pass
 
     @staticmethod
     def _autoscroll(sbar):
