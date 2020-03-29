@@ -9,7 +9,6 @@ import sys
 import platform
 import stat
 import time
-import mmap
 
 try:
     import ttkthemes
@@ -17,62 +16,17 @@ except:
     pass
 
 try:
-    import scandir_rs
+    from benedict import benedict
 except:
-    pass
+    raise ImportError(
+        "onion_file_search now relies on python-benedict, install it with pip install python-benedict"
+    )
 
 from custom_treeview import ScrolledTreeView
-from benedict import benedict
-from itertools import product
-
-
-def os_walk_search(search_loc, search_var):
-    files = []
-    for root, directories, filenames in os.walk(search_loc):
-        for filename in filenames:
-            if search_var in filename:
-                files.append(os.path.join(root, filename))
-    return files
-
-
-def scandir_rs_search(search_loc, search_var):
-    files = []
-    for root, directories, filenames in scandir_rs.walk.Walk(search_loc):
-        # if any([search_var in filename for filename in filenames]):
-        for filename in filenames:
-            if search_var in filename:
-                files.append(os.path.join(root, filename))
-    return files
-
-
-def windows_cmd_search(search_loc, search_var):
-    os.system(
-        r"dir /s/b {search} > files.txt".format(
-            search=os.path.join(search_loc, "*{file}*".format(file=search_var),)
-        )
-    )
-    with open("files.txt", "r") as f:
-        return f.read().splitlines()
-
-
-def linux_cmd_search(search_var, search_loc):
-    os.system(
-        'find {location} -name "*{search_term}*" > ./files.txt'.format(
-            location=search_loc, search_term=search_var,
-        )
-    )
-    with open("files.txt", "r") as f:
-        return f.read().splitlines()
-
-
-def not_darwin_search(search_loc, search_var):
-    if platform.system() == "Linux":
-        return linux_cmd_search(search_loc, search_var)
-    else:
-        if "scandir_rs" in sys.modules:
-            return scandir_rs_search(search_loc, search_var)
-        else:
-            return windows_cmd_search(search_loc, search_var)
+from search import (
+    os_walk_search,
+    not_darwin_search,
+)
 
 
 def file_counter_win(top_master):
@@ -152,7 +106,7 @@ class file_walker:
 
         self.search_but = ttk.Button(self.master, text="Search", command=self.search)
         self.search_but.grid(row=0, column=2)
-        
+
         self.files = []
 
     def search(self, *args):
@@ -247,10 +201,11 @@ class file_walker:
         self.file_tree = file_tree
         get_all_values(self.search_vew, self.file_tree, build_path="")
 
+
 def main():
     if "ttkthemes" in sys.modules:
         root = ttkthemes.ThemedTk()
-        file_walker_gui = file_walker(root)
+        file_walker(root)
 
         if platform.system() == "Linux":
             root.set_theme("equilux")
@@ -261,7 +216,7 @@ def main():
         root.mainloop()
     else:
         root = tk.Tk()
-        file_walker_gui = file_walker(root)
+        file_walker(root)
         root.mainloop()
 
 
