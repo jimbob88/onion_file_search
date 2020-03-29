@@ -9,22 +9,21 @@ except:
 
 
 def os_walk_search(search_loc, search_var):
-    files = []
-    for root, directories, filenames in os.walk(search_loc):
-        for filename in filenames:
-            if search_var in filename:
-                files.append(os.path.join(root, filename))
-    return files
+    return [
+        os.path.join(root, filename)
+        for root, directories, filenames in os.walk(search_loc)
+        for filename in filenames
+        if search_var in filename
+    ]
 
 
 def scandir_rs_search(search_loc, search_var):
-    files = []
-    for root, directories, filenames in scandir_rs.walk.Walk(search_loc):
-        # if any([search_var in filename for filename in filenames]):
-        for filename in filenames:
-            if search_var in filename:
-                files.append(os.path.join(root, filename))
-    return files
+    return [
+        os.path.join(root, filename)
+        for root, directories, filenames in scandir_rs.walk.Walk(search_loc)
+        for filename in filenames
+        if search_var in filename
+    ]
 
 
 def windows_cmd_search(search_loc, search_var):
