@@ -116,14 +116,3 @@ def _on_mousewheel(event, widget):
         widget.yview_scroll(-1, "units")
     elif event.num == 5:
         widget.yview_scroll(1, "units")
-
-
-def _on_shiftmouse(event, widget):
-    if platform.system() == "Windows":
-        widget.xview_scroll(-1 * int(event.delta / 120), "units")
-    elif platform.system() == "Darwin":
-        widget.xview_scroll(-1 * int(event.delta), "units")
-    elif event.num == 4:
-        widget.xview_scroll(-1, "units")
-    elif event.num == 5:
-        widget.xview_scroll(1, "units")
