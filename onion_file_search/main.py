@@ -51,6 +51,10 @@ class file_walker:
         self.master = master
         self.master.title("Onion Search")
 
+        self.search_loc = tk.StringVar()
+        self.search_loc.set(os.path.expanduser("~"))
+        self.search_var = tk.StringVar()
+
         self.init_menubar()
         self.init_searchbar()
         self.init_treeview()
@@ -73,16 +77,12 @@ class file_walker:
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
     def init_searchbar(self):
-        self.search_loc = tk.StringVar()
-        self.search_loc.set(os.path.expanduser("~"))
-        ttk.Combobox(
+        ttk.Entry(
             self.master,
-            values=(os.path.expanduser("~"),),
             textvariable=self.search_loc,
             justify="center",
         ).grid(row=0, column=0, sticky="ns")
 
-        self.search_var = tk.StringVar()
         self.search_bar = ttk.Entry(self.master, textvariable=self.search_var)
         self.search_bar.grid(row=0, column=1, sticky="nsew")
 
@@ -103,7 +103,6 @@ class file_walker:
 
         self.master.grid_rowconfigure(1, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
-
 
     def search(self, *args):
         if not os.path.isdir(self.search_loc.get()):
