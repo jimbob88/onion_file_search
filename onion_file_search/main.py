@@ -5,7 +5,6 @@ import sys
 import platform
 import stat
 from time import ctime
-import json
 
 try:
     import ttkthemes
