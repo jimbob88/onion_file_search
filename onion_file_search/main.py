@@ -53,7 +53,7 @@ class file_walker:
         self.master.title("Onion Search")
 
         self.search_loc = tk.StringVar()
-        self.search_loc.set(os.path.expanduser("~\\Documents"))
+        self.search_loc.set(os.path.expanduser("~"))
         self.search_var = tk.StringVar()
 
         self.init_menubar()
