@@ -5,6 +5,7 @@ import sys
 import platform
 import stat
 from time import ctime
+import json
 
 try:
     import ttkthemes
@@ -52,7 +53,7 @@ class file_walker:
         self.master.title("Onion Search")
 
         self.search_loc = tk.StringVar()
-        self.search_loc.set(os.path.expanduser("~"))
+        self.search_loc.set(os.path.expanduser("~\\Documents"))
         self.search_var = tk.StringVar()
 
         self.init_menubar()
@@ -179,7 +180,7 @@ class file_walker:
         for_merge = []
         for file_path in self.files:
             for_merge.append(benedict(keypath_separator=os.sep))
-            for_merge[-1][file_path.replace("[", "\\[").replace("]", "\\]")] = [
+            for_merge[-1][file_path.replace("[", "\\[").replace("]", "\\]").replace("\\\\?\\", "")] = [
                 "file",
                 file_path,
             ]
